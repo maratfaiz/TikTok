@@ -22,7 +22,7 @@
     "body_font": "Montserrat-Bold.ttf",
     "body_font_size": 50,
     "headline_styles": {
-      "default": { "file": "RuslanDisplay-Regular.ttf", "size": 64 },
+      "default": { "file": "Oswald-Regular.ttf", "size": 68 },
       "romance": { "file": "BadScript-Regular.ttf", "size": 88 },
       "horror": { "file": "RubikBurned-Regular.ttf", "size": 60 },
       "drama": { "file": "YesevaOne-Regular.ttf", "size": 62 },
