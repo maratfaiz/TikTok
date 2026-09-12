@@ -90,20 +90,32 @@ pipeline can be edited without recreating the trigger.
    resulting hosted URL — TikTok requires a Higgsfield-hosted asset.
 8. **Get the connector**: `mcp__higgsfield__tiktok_accounts` → the `active`
    account's `connector_id`.
-9. **Prepare + publish** (settings from `automation/config.json` `publish`
-   block):
-   - `mcp__higgsfield__tiktok_prepare_publish` with `media_type: PHOTO`,
-     `mode: DIRECT_POST`, `photo_images: [hosted_url]` (single image),
-     `title` = `overlay_title` (≤150 chars), `description` = the full caption
-     built in step 5, and the `publish` defaults from config.
-   - Set every flag in the response's `required_confirmations` to `true` and
-     call `mcp__higgsfield__tiktok_publish` with the same `publish_session_id`,
-     `connector_id`, `media_type: PHOTO`, `mode: DIRECT_POST`,
-     `user_confirmed: true`, `preview_confirmed: true`, same `title` and
-     `description`.
-10. Optionally poll `mcp__higgsfield__tiktok_publish_status` once or twice to
+9. **Pick music** (skip this step if `config.music.enabled` is `false`):
+   look up the theme's `font_style` in `config.music.genre_by_font_style` to
+   get a TikTok CML genre, then call `mcp__higgsfield__tiktok_music_trending`
+   with that `genre`, `config.music.country_code`, `config.music.date_range`.
+   Exclude `song_clip_id`s used in the last `avoid_repeat_track_within_posts`
+   posts (see `posts_log.json`'s `music` field); pick randomly among what's
+   left (don't always take rank 1 — vary it). Keep the track's `song_clip_id`,
+   `name` and `artist` for the publish call and the log entry. If the lookup
+   fails or returns nothing, proceed without music rather than blocking the
+   post.
+10. **Prepare + publish** (settings from `automation/config.json` `publish`
+    block):
+    - `mcp__higgsfield__tiktok_prepare_publish` with `media_type: PHOTO`,
+      `mode: DIRECT_POST`, `photo_images: [hosted_url]` (single image),
+      `title` = `overlay_title` (≤150 chars), `description` = the full caption
+      built in step 5, and the `publish` defaults from config.
+    - Set every flag in the response's `required_confirmations` to `true` and
+      call `mcp__higgsfield__tiktok_publish` with the same `publish_session_id`,
+      `connector_id`, `media_type: PHOTO`, `mode: DIRECT_POST`,
+      `user_confirmed: true`, `preview_confirmed: true`, same `title` and
+      `description`, plus `music_sound_id` = the picked track's `song_clip_id`
+      (omit entirely if step 9 was skipped or came up empty) and
+      `music_usage_confirmed: true`.
+11. Optionally poll `mcp__higgsfield__tiktok_publish_status` once or twice to
     confirm it left `PROCESSING_DOWNLOAD`.
-11. **Log the post**: append to `automation/posts_log.json`:
+12. **Log the post**: append to `automation/posts_log.json`:
     ```json
     {
       "date": "<ISO date>",
@@ -113,10 +125,12 @@ pipeline can be edited without recreating the trigger.
       "image_used": "<id>",
       "title": "<overlay_title>",
       "description": "<full caption>",
+      "music": { "song_clip_id": "<id>", "name": "<track name>", "artist": "<artist>" },
       "publish_id": "<publish_id>"
     }
     ```
-12. Commit and push the updated `posts_log.json` to the branch this repo is
+    Omit `music` (or set it to `null`) if no track was attached.
+13. Commit and push the updated `posts_log.json` to the branch this repo is
     developed on, message: `chore: log post <date>`.
 
 ## Known limitations

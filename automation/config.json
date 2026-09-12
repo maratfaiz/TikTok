@@ -14,6 +14,21 @@
   "avoid_repeat_movie_within_posts": 3,
   "movies_per_post": 10,
   "location_text": null,
+  "music": {
+    "enabled": true,
+    "country_code": "US",
+    "date_range": "7DAY",
+    "avoid_repeat_track_within_posts": 3,
+    "genre_by_font_style": {
+      "default": "ALL",
+      "romance": "LO-FI",
+      "horror": "EPIC",
+      "drama": "EPIC",
+      "comedy": "POP",
+      "anime": "K-POP",
+      "scifi": "EDM"
+    }
+  },
   "fonts": {
     "fallback_font": "DejaVuSans-Bold.ttf",
     "body_font": "Montserrat-Bold.ttf",
