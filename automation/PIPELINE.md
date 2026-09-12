@@ -28,10 +28,27 @@ pipeline can be edited without recreating the trigger.
    - `movies`: exactly `config.movies_per_post` (10) *real* movie titles with
      release year that genuinely fit the theme — use your own knowledge,
      don't invent titles. Exclude titles used for this same theme in the last
-     `avoid_repeat_movie_within_posts` posts. For each, write **at least 3
-     sentences** (a short paragraph, not a one-liner): what it's about, why
-     it fits the theme, and what makes it worth watching (see `description`
-     below).
+     `avoid_repeat_movie_within_posts` posts. For each, write **exactly 3
+     tight sentences** — what it's about, why it fits the theme, why it's
+     worth watching — TikTok-caption pace, not a review essay:
+     - cut filler and throat-clearing ("действительно", "по-настоящему",
+       redundant adjectives); every word should earn its place
+     - no repeating the same idea twice across the 3 sentences
+     - after a first draft, reread and cut ~25-30% of the words without
+       losing meaning — a caption that reads noticeably slower than a
+       TikTok comment is too long
+     - example (too padded → tightened):
+       "Городской парень и деревенская девушка внезапно начинают меняться
+       телами и постепенно влюбляются друг в друга, даже не встретившись
+       лично. За красивой анимацией и фантастическим сюжетом скрывается
+       очень настоящая история про первую любовь и взросление через
+       принятие ответственности. Одна из самых красивых работ в
+       современной анимации." →
+       "Городской парень и деревенская девушка внезапно начинают меняться
+       телами и влюбляются друг в друга, даже не встретившись лично. За
+       фантастическим сюжетом скрывается история первой любви, взросления
+       и ответственности. Одна из самых красивых работ современной
+       анимации."
    - `overlay_title`: short, catchy headline for the hero image — this is
      also what goes in the TikTok `title` field (≤ `title_max_length`
      chars). Think hook, not label (e.g. "Я бы стёр себе память, чтобы ещё
