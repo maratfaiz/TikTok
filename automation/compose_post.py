@@ -26,7 +26,7 @@ from PIL import Image, ImageDraw, ImageFont
 # is closest to its own aspect ratio, instead of always force-cropping to
 # a vertical "story" frame.
 CANVAS_CHOICES = [
-    (1080, 1920),  # portrait
+    (1080, 1350),  # portrait - Instagram-post ratio (4:5), not a 9:16 story
     (1080, 1080),  # square
     (1920, 1080),  # landscape
 ]
@@ -120,7 +120,7 @@ def compose_hero(image_source, title, font_style, out_path, config):
 
     draw_centered_text_block(draw, title_lines, title_font, base.width, start_y,
                               fill=(255, 255, 255, 255), line_spacing=line_spacing,
-                              stroke_width=5, stroke_fill=(0, 0, 0, 255))
+                              stroke_width=0, stroke_fill=None)
 
     canvas.convert("RGB").save(out_path, "JPEG", quality=92)
     return out_path
