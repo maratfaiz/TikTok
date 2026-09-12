@@ -20,17 +20,16 @@ pipeline can be edited without recreating the trigger.
    among what's left (if everything is excluded, pick the least recently
    used). Each theme entry carries a `font_style` — this decides which
    headline font is used later.
-4. **Pick images for the post**: `config.images_per_post` images total
-   (default 3), excluding images used in the last
-   `avoid_repeat_image_within_posts` posts; pick randomly among what's left.
-   The first picked image is the **hero** (gets the headline overlay); the
-   rest are **plain** (used as-is, just resized to canvas).
+4. **Pick the image for the post**: exactly one (`config.images_per_post` is
+   `1` — TikTok gets a single photo, never a carousel), excluding images used
+   in the last `avoid_repeat_image_within_posts` posts; pick randomly among
+   what's left. This is the **hero** image — it gets the headline overlay.
 5. **Write the content** (in Russian, matching the theme):
-   - `movies`: 4–6 *real* movie titles with release year that genuinely fit
-     the theme — use your own knowledge, don't invent titles. Exclude titles
-     used for this same theme in the last `avoid_repeat_movie_within_posts`
-     posts. For each, write one punchy sentence describing why it fits (see
-     `descriptions` below).
+   - `movies`: exactly `config.movies_per_post` (10) *real* movie titles with
+     release year that genuinely fit the theme — use your own knowledge,
+     don't invent titles. Exclude titles used for this same theme in the last
+     `avoid_repeat_movie_within_posts` posts. For each, write one punchy
+     sentence describing why it fits (see `description` below).
    - `overlay_title`: short, catchy headline for the hero image — this is
      also what goes in the TikTok `title` field (≤ `title_max_length`
      chars). Think hook, not label (e.g. "Я бы стёр себе память, чтобы ещё
@@ -56,27 +55,24 @@ pipeline can be edited without recreating the trigger.
      plain decorative text, **not** a real geotag (see Known limitations).
      Trim the closing line first if the total doesn't fit, never the
      hashtags to zero.
-6. **Render the images**:
+6. **Render the image**:
    ```
    pip install -q -r automation/requirements.txt
    python3 automation/compose_post.py hero \
      --image "<hero image URL>" \
      --title "<overlay_title>" \
      --font-style "<theme's font_style>" \
-     --out /tmp/tiktok_post_1.jpg
-   python3 automation/compose_post.py plain --image "<image 2 URL>" --out /tmp/tiktok_post_2.jpg
-   python3 automation/compose_post.py plain --image "<image 3 URL>" --out /tmp/tiktok_post_3.jpg
+     --out /tmp/tiktok_post.jpg
    ```
-7. **Host the final images**: for each rendered JPEG,
-   `mcp__higgsfield__media_upload` (presigned URL flow), PUT the bytes, then
-   `mcp__higgsfield__media_confirm`. Collect the resulting hosted URLs in the
-   same order (hero first) — TikTok requires Higgsfield-hosted assets.
+7. **Host the final image**: `mcp__higgsfield__media_upload` (presigned URL
+   flow), PUT the bytes, then `mcp__higgsfield__media_confirm`. Use the
+   resulting hosted URL — TikTok requires a Higgsfield-hosted asset.
 8. **Get the connector**: `mcp__higgsfield__tiktok_accounts` → the `active`
    account's `connector_id`.
 9. **Prepare + publish** (settings from `automation/config.json` `publish`
    block):
    - `mcp__higgsfield__tiktok_prepare_publish` with `media_type: PHOTO`,
-     `mode: DIRECT_POST`, `photo_images: [hosted_url, ...]` (hero first),
+     `mode: DIRECT_POST`, `photo_images: [hosted_url]` (single image),
      `title` = `overlay_title` (≤150 chars), `description` = the full caption
      built in step 5, and the `publish` defaults from config.
    - Set every flag in the response's `required_confirmations` to `true` and
@@ -93,7 +89,7 @@ pipeline can be edited without recreating the trigger.
       "theme": "<theme>",
       "font_style": "<font_style>",
       "movies": ["..."],
-      "images_used": ["<id>", "..."],
+      "image_used": "<id>",
       "title": "<overlay_title>",
       "description": "<full caption>",
       "publish_id": "<publish_id>"
