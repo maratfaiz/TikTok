@@ -2,7 +2,7 @@
   "posts": [
     {
       "date": "2026-09-12",
-      "mode": "draft",
+      "mode": "live",
       "theme": "Фильмы про взросление, которые стоит посмотреть каждому",
       "font_style": "default",
       "movies": [
@@ -19,8 +19,12 @@
       ],
       "image_used": "4745d3ba-4cf4-40ad-bb41-d1cf1650b90b",
       "title": "Фильмы о взрослении, которые стоит пересмотреть каждому",
-      "music": null,
-      "publish_id": "p_inbox_url~v2.7684785490251417617"
+      "music": {
+        "song_clip_id": "6739932089438701570",
+        "name": "Way down We Go",
+        "artist": "KALEO"
+      },
+      "publish_id": "p_pub_url~v2.7684788011308943361"
     }
   ]
 }

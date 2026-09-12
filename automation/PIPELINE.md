@@ -101,16 +101,20 @@ pipeline can be edited without recreating the trigger.
    fails or returns nothing, proceed without music rather than blocking the
    post.
 10. **Prepare + publish** (settings from `automation/config.json` `publish`
-    block):
+    block; always `mode: DIRECT_POST` — see Known limitations for why drafts
+    are not a substitute):
     - `mcp__higgsfield__tiktok_prepare_publish` with `media_type: PHOTO`,
       `mode: DIRECT_POST`, `photo_images: [hosted_url]` (single image),
-      `title` = `overlay_title` (≤150 chars), `description` = the full caption
-      built in step 5, and the `publish` defaults from config.
+      `photo_cover_index: 0` (required even with one image), `title` =
+      `overlay_title` (≤150 chars), `description` = the full caption built in
+      step 5, and the `publish` defaults from config.
     - Set every flag in the response's `required_confirmations` to `true` and
       call `mcp__higgsfield__tiktok_publish` with the same `publish_session_id`,
       `connector_id`, `media_type: PHOTO`, `mode: DIRECT_POST`,
-      `user_confirmed: true`, `preview_confirmed: true`, same `title` and
-      `description`, plus `music_sound_id` = the picked track's `song_clip_id`
+      `user_confirmed: true`, `preview_confirmed: true`, and **resend both
+      `title` and `description`** (they are not carried over automatically
+      from prepare — omitting them here publishes with an empty caption),
+      plus `music_sound_id` = the picked track's `song_clip_id`
       (omit entirely if step 9 was skipped or came up empty) and
       `music_usage_confirmed: true`.
 11. Optionally poll `mcp__higgsfield__tiktok_publish_status` once or twice to
@@ -141,6 +145,12 @@ pipeline can be edited without recreating the trigger.
 - **No analytics feedback yet.** Theme rotation is round-robin/random with
   cooldowns, not based on view/like/comment performance. See the README's
   "Фаза 2" section.
+- **`UPLOAD_TO_DRAFT` does not reliably carry the caption or music.**
+  Verified live: a draft saved with `title` + `description` only showed
+  `title` in the TikTok app's caption field, and drafts never keep
+  `music_sound_id` regardless. Treat drafts as media-only previews, not a
+  way to test the real caption/music — use `DIRECT_POST` for anything where
+  the caption or music actually matters.
 
 ## Failure handling
 
