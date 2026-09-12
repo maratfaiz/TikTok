@@ -6,12 +6,29 @@
     "allow_stitch": false,
     "is_aigc": false
   },
-  "caption_max_length": 150,
+  "title_max_length": 150,
+  "description_max_length": 4000,
+  "images_per_post": 3,
   "avoid_repeat_theme_within_posts": 4,
   "avoid_repeat_image_within_posts": 5,
   "avoid_repeat_movie_within_posts": 3,
   "movies_per_post": {
     "min": 4,
     "max": 6
+  },
+  "location_text": null,
+  "fonts": {
+    "fallback_font": "DejaVuSans-Bold.ttf",
+    "body_font": "Montserrat-Bold.ttf",
+    "body_font_size": 50,
+    "headline_styles": {
+      "default": { "file": "RuslanDisplay-Regular.ttf", "size": 64 },
+      "romance": { "file": "BadScript-Regular.ttf", "size": 88 },
+      "horror": { "file": "RubikBurned-Regular.ttf", "size": 60 },
+      "drama": { "file": "YesevaOne-Regular.ttf", "size": 62 },
+      "comedy": { "file": "RubikBubbles-Regular.ttf", "size": 56 },
+      "anime": { "file": "RubikGlitch-Regular.ttf", "size": 58 },
+      "scifi": { "file": "Unbounded-ExtraBold.ttf", "size": 52 }
+    }
   }
 }

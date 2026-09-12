@@ -17,45 +17,73 @@ pipeline can be edited without recreating the trigger.
    `automation/base_images.json`, `automation/config.json`.
 3. **Pick a theme**: exclude any theme used in the last
    `avoid_repeat_theme_within_posts` entries of `posts_log.json`; pick randomly
-   among what's left (if everything is excluded, pick the least recently used).
-4. **Pick a base image**: exclude images used in the last
+   among what's left (if everything is excluded, pick the least recently
+   used). Each theme entry carries a `font_style` — this decides which
+   headline font is used later.
+4. **Pick images for the post**: `config.images_per_post` images total
+   (default 3), excluding images used in the last
    `avoid_repeat_image_within_posts` posts; pick randomly among what's left.
+   The first picked image is the **hero** (gets the headline overlay); the
+   rest are **plain** (used as-is, just resized to canvas).
 5. **Write the content** (in Russian, matching the theme):
-   - `movies`: 4–6 *real* movie titles that genuinely fit the theme — use your
-     own knowledge, don't invent titles. Exclude titles used for this same
-     theme in the last `avoid_repeat_movie_within_posts` posts.
-   - `overlay_title`: short punchy headline for the image (can be the theme
-     itself or a tighter rewrite of it).
-   - `caption`: 1–3 engaging sentences for the TikTok description.
-   - `hashtags`: 5–8 relevant hashtags (mix of broad movie/cinema tags and
-     theme-specific ones).
-   - Combine `caption` + `hashtags` into one string ≤ `caption_max_length`
-     chars (TikTok's title field limit is 150) — trim the caption first if
-     it doesn't fit, never the hashtags to zero.
-6. **Render the image**:
+   - `movies`: 4–6 *real* movie titles with release year that genuinely fit
+     the theme — use your own knowledge, don't invent titles. Exclude titles
+     used for this same theme in the last `avoid_repeat_movie_within_posts`
+     posts. For each, write one punchy sentence describing why it fits (see
+     `descriptions` below).
+   - `overlay_title`: short, catchy headline for the hero image — this is
+     also what goes in the TikTok `title` field (≤ `title_max_length`
+     chars). Think hook, not label (e.g. "Я бы стёр себе память, чтобы ещё
+     раз посмотреть эти фильмы" rather than a plain theme name).
+   - `description`: the full TikTok caption (≤ `description_max_length`
+     chars), built as:
+     ```
+     <overlay_title>
+
+     1. <Movie 1> (<year>)
+     <one-line reason it fits the theme>
+
+     2. <Movie 2> (<year>)
+     <one-line reason it fits the theme>
+
+     ...
+
+     <one closing line / call to action>
+
+     <hashtags, 5-8, space separated>
+     ```
+     If `config.location_text` is set, append it as the last line — this is
+     plain decorative text, **not** a real geotag (see Known limitations).
+     Trim the closing line first if the total doesn't fit, never the
+     hashtags to zero.
+6. **Render the images**:
    ```
    pip install -q -r automation/requirements.txt
-   python3 automation/compose_post.py \
-     --image "<chosen base image URL>" \
+   python3 automation/compose_post.py hero \
+     --image "<hero image URL>" \
      --title "<overlay_title>" \
-     --movies "<movie1>|<movie2>|..." \
-     --out /tmp/tiktok_post.jpg
+     --font-style "<theme's font_style>" \
+     --out /tmp/tiktok_post_1.jpg
+   python3 automation/compose_post.py plain --image "<image 2 URL>" --out /tmp/tiktok_post_2.jpg
+   python3 automation/compose_post.py plain --image "<image 3 URL>" --out /tmp/tiktok_post_3.jpg
    ```
-7. **Host the final image**: `mcp__higgsfield__media_upload` (presigned URL
-   flow) with `/tmp/tiktok_post.jpg`, PUT the bytes, then
-   `mcp__higgsfield__media_confirm`. Use the resulting hosted URL for
-   publishing — TikTok requires a Higgsfield-hosted asset.
+7. **Host the final images**: for each rendered JPEG,
+   `mcp__higgsfield__media_upload` (presigned URL flow), PUT the bytes, then
+   `mcp__higgsfield__media_confirm`. Collect the resulting hosted URLs in the
+   same order (hero first) — TikTok requires Higgsfield-hosted assets.
 8. **Get the connector**: `mcp__higgsfield__tiktok_accounts` → the `active`
    account's `connector_id`.
 9. **Prepare + publish** (settings from `automation/config.json` `publish`
    block):
    - `mcp__higgsfield__tiktok_prepare_publish` with `media_type: PHOTO`,
-     `mode: DIRECT_POST`, `photo_images: [hosted_url]`, `title` = the combined
-     caption+hashtags string, and the `publish` defaults from config.
+     `mode: DIRECT_POST`, `photo_images: [hosted_url, ...]` (hero first),
+     `title` = `overlay_title` (≤150 chars), `description` = the full caption
+     built in step 5, and the `publish` defaults from config.
    - Set every flag in the response's `required_confirmations` to `true` and
      call `mcp__higgsfield__tiktok_publish` with the same `publish_session_id`,
      `connector_id`, `media_type: PHOTO`, `mode: DIRECT_POST`,
-     `user_confirmed: true`, `preview_confirmed: true`.
+     `user_confirmed: true`, `preview_confirmed: true`, same `title` and
+     `description`.
 10. Optionally poll `mcp__higgsfield__tiktok_publish_status` once or twice to
     confirm it left `PROCESSING_DOWNLOAD`.
 11. **Log the post**: append to `automation/posts_log.json`:
@@ -63,15 +91,25 @@ pipeline can be edited without recreating the trigger.
     {
       "date": "<ISO date>",
       "theme": "<theme>",
+      "font_style": "<font_style>",
       "movies": ["..."],
-      "image_used": "<base image id/url>",
-      "caption": "<caption>",
-      "hashtags": ["..."],
+      "images_used": ["<id>", "..."],
+      "title": "<overlay_title>",
+      "description": "<full caption>",
       "publish_id": "<publish_id>"
     }
     ```
 12. Commit and push the updated `posts_log.json` to the branch this repo is
     developed on, message: `chore: log post <date>`.
+
+## Known limitations
+
+- **No native location tag.** TikTok's Content Posting API (and Higgsfield's
+  wrapper) has no location/POI parameter — `config.location_text`, if set, is
+  only plain text appended to the caption, not a real geotag.
+- **No analytics feedback yet.** Theme rotation is round-robin/random with
+  cooldowns, not based on view/like/comment performance. See the README's
+  "Фаза 2" section.
 
 ## Failure handling
 

@@ -1,21 +1,33 @@
 #!/usr/bin/env python3
-"""Compose a TikTok photo post: base image + theme title + movie list overlay.
+"""Compose TikTok photo-post images from a base photo.
+
+Two modes:
+  hero  - base image + headline overlay (font depends on --font-style, see
+          config.json fonts.headline_styles). This is the first/cover image.
+  plain - base image resized/cropped to canvas and saved as JPEG, no text.
+          Used for the extra carousel images.
 
 Usage:
-    python3 compose_post.py --image <path-or-url> --title "THEME" \
-        --movies "Movie 1|Movie 2|Movie 3" --out /tmp/post.jpg
+    python3 compose_post.py hero --image <path-or-url> --title "THEME" \
+        --font-style romance --out /tmp/post_1.jpg
+    python3 compose_post.py plain --image <path-or-url> --out /tmp/post_2.jpg
 """
 import argparse
 import io
+import json
 import urllib.request
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
 CANVAS_SIZE = (1080, 1920)
-FONT_DIR = Path(__file__).parent / "fonts"
-TITLE_FONT_PATH = FONT_DIR / "DejaVuSans-Bold.ttf"
-MOVIE_FONT_PATH = FONT_DIR / "DejaVuSans-Bold.ttf"
+AUTOMATION_DIR = Path(__file__).parent
+FONT_DIR = AUTOMATION_DIR / "fonts"
+CONFIG_PATH = AUTOMATION_DIR / "config.json"
+
+
+def load_config() -> dict:
+    return json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
 
 
 def load_image(source: str) -> Image.Image:
@@ -53,76 +65,80 @@ def wrap_text(draw, text, font, max_width):
     return lines
 
 
-def draw_text_block(draw, lines, font, x, y, fill, line_spacing, stroke_width, stroke_fill):
+def draw_centered_text_block(draw, lines, font, canvas_width, y, fill, line_spacing, stroke_width, stroke_fill):
     ascent, descent = font.getmetrics()
     line_h = int((ascent + descent) * line_spacing)
     for i, line in enumerate(lines):
+        w = draw.textlength(line, font=font)
+        x = (canvas_width - w) / 2
         draw.text((x, y + i * line_h), line, font=font, fill=fill,
                    stroke_width=stroke_width, stroke_fill=stroke_fill)
     return y + len(lines) * line_h
 
 
-def build_bottom_gradient(width, height):
-    gradient = Image.new("L", (1, height), color=0)
-    for y in range(height):
-        alpha = int(255 * (y / height) ** 1.4)
-        gradient.putpixel((0, y), min(alpha, 235))
-    gradient = gradient.resize((width, height))
-    black = Image.new("RGBA", (width, height), (0, 0, 0, 255))
-    black.putalpha(gradient)
-    return black
+def resolve_font(path_name: str, size: int) -> ImageFont.FreeTypeFont:
+    path = FONT_DIR / path_name
+    return ImageFont.truetype(str(path), size)
 
 
-def compose(image_source, title, movies, out_path):
+def compose_hero(image_source, title, font_style, out_path, config):
     base = fit_to_canvas(load_image(image_source))
-
-    grad_h = int(base.height * 0.62)
-    shade = build_bottom_gradient(base.width, grad_h)
-
     canvas = base.convert("RGBA")
-    canvas.paste(shade, (0, base.height - grad_h), shade)
-
     draw = ImageDraw.Draw(canvas)
+
     margin = 72
     content_width = base.width - 2 * margin
 
-    title_font = ImageFont.truetype(str(TITLE_FONT_PATH), 70)
-    movie_font = ImageFont.truetype(str(MOVIE_FONT_PATH), 52)
+    fonts_cfg = config["fonts"]
+    style = fonts_cfg["headline_styles"].get(font_style, fonts_cfg["headline_styles"]["default"])
+    try:
+        title_font = resolve_font(style["file"], style["size"])
+    except OSError:
+        title_font = resolve_font(fonts_cfg["fallback_font"], style["size"])
 
-    title_lines = wrap_text(draw, title.upper(), title_font, content_width)
-    movie_lines = [f"{i + 1}. {m}" for i, m in enumerate(movies)]
+    title_lines = wrap_text(draw, title, title_font, content_width)
+    ascent, descent = title_font.getmetrics()
+    line_spacing = 1.3
+    line_h = int((ascent + descent) * line_spacing)
+    title_block_h = line_h * len(title_lines)
 
-    t_ascent, t_descent = title_font.getmetrics()
-    title_block_h = int((t_ascent + t_descent) * 1.2) * len(title_lines)
-    m_ascent, m_descent = movie_font.getmetrics()
-    movie_block_h = int((m_ascent + m_descent) * 1.35) * len(movie_lines)
+    start_y = (base.height - title_block_h) / 2
 
-    bottom_pad = 110
-    total_h = title_block_h + 40 + movie_block_h
-    start_y = base.height - bottom_pad - total_h
-
-    y = draw_text_block(draw, title_lines, title_font, margin, start_y,
-                         fill=(255, 255, 255, 255), line_spacing=1.2,
-                         stroke_width=3, stroke_fill=(0, 0, 0, 255))
-    y += 40
-    draw_text_block(draw, movie_lines, movie_font, margin, y,
-                     fill=(255, 214, 64, 255), line_spacing=1.35,
-                     stroke_width=2, stroke_fill=(0, 0, 0, 255))
+    draw_centered_text_block(draw, title_lines, title_font, base.width, start_y,
+                              fill=(255, 255, 255, 255), line_spacing=line_spacing,
+                              stroke_width=5, stroke_fill=(0, 0, 0, 255))
 
     canvas.convert("RGB").save(out_path, "JPEG", quality=92)
     return out_path
 
 
+def compose_plain(image_source, out_path):
+    base = fit_to_canvas(load_image(image_source))
+    base.save(out_path, "JPEG", quality=92)
+    return out_path
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--image", required=True, help="Local path or URL of the base image")
-    parser.add_argument("--title", required=True, help="Overlay headline (theme)")
-    parser.add_argument("--movies", required=True, help="Movie titles separated by '|'")
-    parser.add_argument("--out", required=True, help="Output JPEG path")
-    args = parser.parse_args()
+    sub = parser.add_subparsers(dest="mode", required=True)
 
-    movies = [m.strip() for m in args.movies.split("|") if m.strip()]
-    compose(args.image, args.title, movies, args.out)
+    hero = sub.add_parser("hero")
+    hero.add_argument("--image", required=True)
+    hero.add_argument("--title", required=True)
+    hero.add_argument("--font-style", default="default")
+    hero.add_argument("--out", required=True)
+
+    plain = sub.add_parser("plain")
+    plain.add_argument("--image", required=True)
+    plain.add_argument("--out", required=True)
+
+    args = parser.parse_args()
+    config = load_config()
+
+    if args.mode == "hero":
+        compose_hero(args.image, args.title, args.font_style, args.out, config)
+    else:
+        compose_plain(args.image, args.out)
     print(args.out)
 
 
