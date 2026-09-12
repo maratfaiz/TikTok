@@ -28,8 +28,10 @@ pipeline can be edited without recreating the trigger.
    - `movies`: exactly `config.movies_per_post` (10) *real* movie titles with
      release year that genuinely fit the theme — use your own knowledge,
      don't invent titles. Exclude titles used for this same theme in the last
-     `avoid_repeat_movie_within_posts` posts. For each, write one punchy
-     sentence describing why it fits (see `description` below).
+     `avoid_repeat_movie_within_posts` posts. For each, write **at least 3
+     sentences** (a short paragraph, not a one-liner): what it's about, why
+     it fits the theme, and what makes it worth watching (see `description`
+     below).
    - `overlay_title`: short, catchy headline for the hero image — this is
      also what goes in the TikTok `title` field (≤ `title_max_length`
      chars). Think hook, not label (e.g. "Я бы стёр себе память, чтобы ещё
@@ -40,10 +42,10 @@ pipeline can be edited without recreating the trigger.
      <overlay_title>
 
      1. <Movie 1> (<year>)
-     <one-line reason it fits the theme>
+     <3+ sentence paragraph: what it's about, why it fits, why watch it>
 
      2. <Movie 2> (<year>)
-     <one-line reason it fits the theme>
+     <3+ sentence paragraph: what it's about, why it fits, why watch it>
 
      ...
 
@@ -53,8 +55,10 @@ pipeline can be edited without recreating the trigger.
      ```
      If `config.location_text` is set, append it as the last line — this is
      plain decorative text, **not** a real geotag (see Known limitations).
-     Trim the closing line first if the total doesn't fit, never the
-     hashtags to zero.
+     If the total doesn't fit `description_max_length`: trim the closing
+     line first, then shorten the per-movie paragraphs (never below 3
+     sentences), and only as a last resort drop the lowest-priority
+     hashtags — never all of them.
 6. **Render the image**:
    ```
    pip install -q -r automation/requirements.txt
