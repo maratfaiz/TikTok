@@ -20,7 +20,16 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
-CANVAS_SIZE = (1080, 1920)
+# TikTok photo posts must fit within 1920x1080 or 1080x1920 - portrait,
+# square and landscape are all fine as long as neither dimension exceeds
+# that bound. We snap each source photo to whichever of these three shapes
+# is closest to its own aspect ratio, instead of always force-cropping to
+# a vertical "story" frame.
+CANVAS_CHOICES = [
+    (1080, 1920),  # portrait
+    (1080, 1080),  # square
+    (1920, 1080),  # landscape
+]
 AUTOMATION_DIR = Path(__file__).parent
 FONT_DIR = AUTOMATION_DIR / "fonts"
 CONFIG_PATH = AUTOMATION_DIR / "config.json"
@@ -38,8 +47,13 @@ def load_image(source: str) -> Image.Image:
     return Image.open(source).convert("RGB")
 
 
-def fit_to_canvas(img: Image.Image, size=CANVAS_SIZE) -> Image.Image:
-    target_w, target_h = size
+def best_canvas_for(img: Image.Image) -> tuple[int, int]:
+    src_ratio = img.width / img.height
+    return min(CANVAS_CHOICES, key=lambda wh: abs((wh[0] / wh[1]) - src_ratio))
+
+
+def fit_to_canvas(img: Image.Image, size=None) -> Image.Image:
+    target_w, target_h = size or best_canvas_for(img)
     src_w, src_h = img.size
     scale = max(target_w / src_w, target_h / src_h)
     new_w, new_h = round(src_w * scale), round(src_h * scale)
